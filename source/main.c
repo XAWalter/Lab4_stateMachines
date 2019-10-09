@@ -14,54 +14,71 @@
 
 typedef enum States { init, wait, inc, dec, reset } States;
 
-char LedTick(char state){
-    unsigned char tmpB = 0x00;
-    unsigned char tmpA = PINA & 0x01;
-    
-    switch (state){
+char CountTick(char state){
+    unsigned char A0 = ( PINA & 0x01 );
+    unsigned char A1 = ( PINA & 0x02 );
+    static unsigned char cnt;   
+     
+    switch (state){ //transitions
     
     case init:
-	state = releaseB0;
+	state = wait;
 	break;
-    case releaseB0:
-	state = tmpA? pressB1: releaseB0;
+    
+    case wait:
+	if( A0 && A1 ){
+	    state = reset;	
+	}
+	else if ( A0 && !A1 ){
+	    state = inc;
+	} 
+	else if ( !A0 && A1 ){
+	    state = dec;
+	}
+	else if ( !A0 && !A1 ){
+     	    state = wait;
+	}
+	else {
+	    state = wait;
+	}
 	break;
-    case pressB1:
-	state = tmpA? pressB1: releaseB1;
+
+    case inc:
+	state = wait; 
+   	break;
+    
+    case dec:
+	state = wait;
 	break;
-    case releaseB1:
-	state = tmpA? pressB0: releaseB1;
-	break;
-    case pressB0:
-	state = tmpA? pressB0: releaseB0;
-	break;
-    default:
-	state = init;
-	break;
+
+    case reset:
+	state = wait;
+	break; 
     }
 
-    switch(state){
+    switch(state){ //actions
 
     case init:
+	cnt = 7;
 	break;
-    case releaseB0:
-	tmpB = 0x01;
+    
+    case wait:
 	break;
-    case pressB1:
-	tmpB = 0x02;
-	break;	
-    case releaseB1:
-	tmpB = 0x02;
+
+    case inc:
+	cnt++;
 	break;
-    case pressB0:
-	tmpB = 0x01;
+
+    case dec:
+	cnt--;
 	break;
-    default:
-	tmpB = 0x00;
-	break;
+
+    case reset:
+	cnt = 0;
+	break; 
     }
 
-    PORTB = tmpB;
+    PORTC = cnt;
     
     return state;
 
@@ -70,11 +87,11 @@ char LedTick(char state){
 int main(void) {
     /* Insert DDR and PORT initializations */
     DDRA = 0x00; PORTA = 0xFF;
-    DDRB = 0xFF; PORTB = 0x00;
+    DDRC = 0xFF; PORTC = 0x00;
     /* Insert your solution below */
     States state = init;
     while (1) {
-	state = LedTick(state);
+	state = CountTick(state);
     }
     return 1;
 }
