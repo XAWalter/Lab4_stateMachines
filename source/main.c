@@ -12,20 +12,20 @@
 #include "simAVRHeader.h"
 #endif
 
-typedef enum States { init, wait, inc, dec, reset } States;
+typedef enum States { init, releasedWait, pressedWait, inc, dec, reset } States;
 
 char CountTick(char state){
     unsigned char A0 = ( PINA & 0x01 );
     unsigned char A1 = ( PINA & 0x02 );
-    static unsigned char cnt;   
+    static unsigned char cnt = 7;   
      
     switch (state){ //transitions
     
     case init:
-	state = wait;
+	state = releasedWait;
 	break;
     
-    case wait:
+    case releasedWait:
 	if( A0 && A1 ){
 	    state = reset;	
 	}
@@ -34,25 +34,38 @@ char CountTick(char state){
 	} 
 	else if ( !A0 && A1 ){
 	    state = dec;
-	}
-	else if ( !A0 && !A1 ){
-     	    state = wait;
-	}
+	}	
 	else {
-	    state = wait;
+	    state = releasedWait;
+	}
+	break;
+
+    case pressedWait:
+	if ( !A0 && !A1 ){
+	    state = releasedWait;
+	}
+	else if ( A0 && A1 ){
+	    state = reset;
+	}
+	else{
+	    state = pressedWait;
 	}
 	break;
 
     case inc:
-	state = wait; 
+	state = pressedWait; 
    	break;
     
     case dec:
-	state = wait;
+	state = pressedWait;
 	break;
 
     case reset:
-	state = wait;
+	state = pressedWait;
+	break;
+
+    default:
+	state = releasedWait;
 	break; 
     }
 
@@ -61,20 +74,30 @@ char CountTick(char state){
     case init:
 	cnt = 7;
 	break;
-    
-    case wait:
+   
+    case releasedWait:
+	break;
+ 
+    case pressedWait:
 	break;
 
     case inc:
-	cnt++;
+	if ( cnt < 9 ){
+	    cnt++;
+	}
 	break;
 
     case dec:
-	cnt--;
+	if( cnt > 0 ){
+	    cnt--;
+	}
 	break;
 
     case reset:
 	cnt = 0;
+	break;
+
+    default:
 	break; 
     }
 
