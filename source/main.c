@@ -12,7 +12,7 @@
 #include "simAVRHeader.h"
 #endif
 
-typedef enum States { init, releaseB0, pressB1, releaseB1, pressB0 } States;
+typedef enum States { init, wait, inc, dec, reset } States;
 
 char LedTick(char state){
     unsigned char tmpB = 0x00;
